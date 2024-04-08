@@ -1,6 +1,6 @@
 """Constants for the njsPC-HA integration."""
 
-from homeassistant.backports.enum import StrEnum
+import enum
 
 
 DOMAIN = "njspc_ha"
@@ -65,7 +65,7 @@ MIN_FLOW = "minFlow"
 MAX_FLOW = "maxFlow"
 
 
-class PoolEquipmentClass(StrEnum):
+class PoolEquipmentClass(enum.StrEnum):
     """Class for pool equipment."""
 
     CONTROL_PANEL = "control_panel"
@@ -111,7 +111,7 @@ class PoolEquipmentClass(StrEnum):
     """A pool equipment filter"""
 
 
-class PoolEquipmentModel(StrEnum):
+class PoolEquipmentModel(enum.StrEnum):
     """Model descriptions for pool equipment."""
 
     CONTROL_PANEL = "Control Panel"

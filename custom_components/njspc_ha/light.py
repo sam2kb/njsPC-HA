@@ -1,16 +1,20 @@
 """Platform for light integration."""
+
 from __future__ import annotations
 
 from typing import Any
 
-from .entity import PoolEquipmentEntity
-from homeassistant.components.light import ATTR_EFFECT, LightEntity, LightEntityFeature
+from homeassistant.components.light import (
+    ATTR_EFFECT,
+    ColorMode,
+    LightEntity,
+    LightEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    PoolEquipmentClass,
     API_CIRCUIT_SETSTATE,
     API_CIRCUIT_SETTHEME,
     API_LIGHTGROUP_SETSTATE,
@@ -19,7 +23,10 @@ from .const import (
     EVENT_AVAILABILITY,
     EVENT_CIRCUIT,
     EVENT_LIGHTGROUP,
+    PoolEquipmentClass,
 )
+from .entity import PoolEquipmentEntity
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -63,6 +70,7 @@ async def async_setup_entry(
     if new_devices:
         async_add_entities(new_devices)
 
+
 class CircuitLight(PoolEquipmentEntity, LightEntity):
     """Light entity for njsPC-HA."""
 
@@ -76,11 +84,19 @@ class CircuitLight(PoolEquipmentEntity, LightEntity):
         """Initialize the light."""
         match equipment_class:
             case PoolEquipmentClass.LIGHT:
-                super().__init__(coordinator=coordinator, equipment_class=PoolEquipmentClass.LIGHT, data=circuit)
+                super().__init__(
+                    coordinator=coordinator,
+                    equipment_class=PoolEquipmentClass.LIGHT,
+                    data=circuit,
+                )
                 self._event = EVENT_CIRCUIT
                 self._command = API_CIRCUIT_SETSTATE
             case PoolEquipmentClass.LIGHT_GROUP:
-                super().__init__(coordinator=coordinator, equipment_class=PoolEquipmentClass.LIGHT_GROUP, data=circuit)
+                super().__init__(
+                    coordinator=coordinator,
+                    equipment_class=PoolEquipmentClass.LIGHT_GROUP,
+                    data=circuit,
+                )
                 self._event = EVENT_LIGHTGROUP
                 self._command = API_LIGHTGROUP_SETSTATE
         self._lightthemes = lightthemes
@@ -173,7 +189,7 @@ class CircuitLight(PoolEquipmentEntity, LightEntity):
 
     @property
     def effect_list(self) -> list[str]:
-        """Get list of effects"""
+        """Get list of effects."""
         if len(self._lightthemes) > 0:
             _effects = []
             for effect in self._lightthemes.values():
@@ -183,8 +199,17 @@ class CircuitLight(PoolEquipmentEntity, LightEntity):
 
     @property
     def supported_features(self) -> LightEntityFeature:
-        """See if light has effects"""
-
+        """See if light has effects."""
         if len(self._lightthemes) > 0:
             return LightEntityFeature.EFFECT
-        return 0
+        return LightEntityFeature(0)
+
+    @property
+    def color_mode(self) -> ColorMode:
+        """Get color mode, always ONOFF for njs-PC."""
+        return ColorMode.ONOFF
+
+    @property
+    def supported_color_modes(self) -> set[ColorMode]:
+        """Color mode list, only ONOFF for njs-PC."""
+        return {ColorMode.ONOFF}

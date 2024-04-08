@@ -1,4 +1,5 @@
 """Platform for body integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -26,7 +27,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
-    BinarySensorDeviceClass
+    BinarySensorDeviceClass,
 )
 
 from .entity import PoolEquipmentEntity
@@ -423,6 +424,8 @@ class BodyCircuitSwitch(PoolEquipmentEntity, SwitchEntity):
 class BodyHeater(PoolEquipmentEntity, ClimateEntity):
     """Climate entity for njsPC-HA"""
 
+    _enable_turn_on_off_backwards_compatibility = False
+
     # When thinking about heaters for pool/spa you need to not think of it so much
     # like a home thermostat.  While a home thermostat can be made to work
     # the difference becomes a struggle to overcome.
@@ -456,6 +459,7 @@ class BodyHeater(PoolEquipmentEntity, ClimateEntity):
         self.heat_mode = None
         self.heat_status = None
         self.body_temperature = None
+
         if "setPoint" in body:
             self.heat_setpoint = body["setPoint"]
         if "coolSetpoint" in body:
@@ -627,10 +631,18 @@ class BodyHeater(PoolEquipmentEntity, ClimateEntity):
     def supported_features(self) -> ClimateEntityFeature:
         if len(self._heatmodes) <= 2 and self._has_cooling is True:
             # only 1 heater that supports cooling
-            return ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
+            return (
+                ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
+                | ClimateEntityFeature.TURN_ON
+                | ClimateEntityFeature.TURN_OFF
+            )
         elif len(self._heatmodes) <= 2:
             # only 1 heater that doesn't support cooling
-            return ClimateEntityFeature.TARGET_TEMPERATURE
+            return (
+                ClimateEntityFeature.TARGET_TEMPERATURE
+                | ClimateEntityFeature.TURN_ON
+                | ClimateEntityFeature.TURN_OFF
+            )
         elif self._has_cooling is True:
             # multiple heaters that support cooling
             return (
@@ -662,6 +674,7 @@ class BodyHeater(PoolEquipmentEntity, ClimateEntity):
                 njspc_value = next(
                     (k for k, v in self._heatmodes.items() if v.lower() == "off"), None
                 )
+
             else:
                 njspc_value = next(
                     (k for k, v in self._heatmodes.items() if v.lower() != "off"), None
@@ -747,7 +760,7 @@ class BodyCoveredSensor(PoolEquipmentEntity, BinarySensorEntity):
         if self._value is True:
             return "mdi:arrow-down-drop-circle"
         return "mdi:arrow-up-drop-circle-outline"
-    
+
     @property
     def device_class(self) -> BinarySensorDeviceClass | None:
         return BinarySensorDeviceClass.DOOR
