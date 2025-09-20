@@ -106,7 +106,17 @@ class PanelModeSensor(PoolEquipmentEntity, SensorEntity):
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._value = None
         if "mode" in data:
-            self._value = data["mode"]["desc"]
+            # Some firmware versions may only provide a name or numeric value without 'desc'
+            mode_obj = data["mode"]
+            if isinstance(mode_obj, dict):
+                self._value = (
+                    mode_obj.get("desc")
+                    or mode_obj.get("name")
+                    or str(mode_obj.get("val"))
+                )
+            else:
+                # Unexpected structure; keep raw representation
+                self._value = str(mode_obj)
             self._available = True
         else:
             self._value = None
@@ -116,7 +126,15 @@ class PanelModeSensor(PoolEquipmentEntity, SensorEntity):
         """Handle updated data from the coordinator."""
         if self.coordinator.data["event"] == EVENT_CONTROLLER:
             if "mode" in self.coordinator.data:
-                self._value = self.coordinator.data["mode"]["desc"]
+                mode_obj = self.coordinator.data["mode"]
+                if isinstance(mode_obj, dict):
+                    self._value = (
+                        mode_obj.get("desc")
+                        or mode_obj.get("name")
+                        or str(mode_obj.get("val"))
+                    )
+                else:
+                    self._value = str(mode_obj)
                 self._available = True
             else:
                 self._value = None
