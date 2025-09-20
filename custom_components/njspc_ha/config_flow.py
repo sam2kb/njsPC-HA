@@ -70,9 +70,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             info = await validate_input(self.hass, user_input)
+            # Build deterministic unique id: host (dots stripped) + port
             self.server_id = f'njspcha_{user_input[CONF_HOST].replace(".", "")}{user_input[CONF_PORT]}'
+            _LOGGER.debug(
+                "njsPC-HA config_flow: generated unique_id=%s (host=%s port=%s)",
+                self.server_id,
+                user_input[CONF_HOST],
+                user_input[CONF_PORT],
+            )
             await self.async_set_unique_id(self.server_id)
-            self._abort_if_unique_id_configured()
+            try:
+                self._abort_if_unique_id_configured()
+            except Exception:
+                # Surface clearer context when duplicate encountered
+                _LOGGER.debug(
+                    "njsPC-HA config_flow: duplicate unique_id=%s already configured; aborting",
+                    self.server_id,
+                )
+                raise
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except Exception:  # pylint: disable=broad-except
@@ -92,6 +107,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.zero_conf = discovery_info
         self.server_id = (
             f'njspcha_{discovery_info.host.replace(".", "")}{discovery_info.port}'
+        )
+        _LOGGER.debug(
+            "njsPC-HA zeroconf discovery: host=%s port=%s unique_id=%s", 
+            discovery_info.host, discovery_info.port, self.server_id
         )
         # Do not probe the device if the host is already configured
         self._async_abort_entries_match(self.server_id)
@@ -133,6 +152,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.host = urlparse(discovery_info.ssdp_location).hostname
         self.port = urlparse(discovery_info.ssdp_location).port
         self.server_id = f'njspcha_{self.host.replace(".", "")}{self.port}'
+        _LOGGER.debug(
+            "njsPC-HA ssdp discovery: host=%s port=%s unique_id=%s location=%s", 
+            self.host, self.port, self.server_id, discovery_info.ssdp_location
+        )
         await self.async_set_unique_id(self.server_id)
         self._abort_if_unique_id_configured()
         self.controller_name = discovery_info.upnp.get(
